@@ -14,9 +14,20 @@ const connection = mysql.createConnection({
 });
 connection.connect();
 
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 (async () => {
     var block = 19762757;
+
+    var waitForSelect = true;
+    connection.query("SELECT * FROM `transactions` WHERE `microbuddy` IS NULL AND (`method`='replicate' OR `method`='simpleReplicate') ORDER BY `blockNumber` ASC LIMIT 1", function(error, results, fields) {
+        if (typeof results[0] !== "undefined") {
+            block = results[0].blockNumber;
+        }
+        waitForSelect = false;
+    });
+    while (waitForSelect) { await delay(1000); };
+
     while (true) {
         const response = await fetch('https://api-testnet.polygonscan.com/api?module=account&action=tokennfttx&contractaddress=0xdcfddb06af6f1a8d4be001c43b0f3e29bfbd96db&startblock=' + block.toString() + '&endblock=999999999&sort=asc');
         const data = await response.json();
